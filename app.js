@@ -9,10 +9,31 @@ function setStatus(s){el.status.textContent=s}
 function entries(){try{return JSON.parse(localStorage.getItem(storageKey))||[]}catch{return[]}}
 function saveEntries(a){localStorage.setItem(storageKey,JSON.stringify(a))}
 function esc(s){return s.replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
-function splitText(t){return t.replace(/\r/g,"").replace(/[ \t\u3000]+/g," ").replace(/([\u3002\uff01\uff1f])/g,"$1\n").replace(/(\u307e\u305a|\u6b21\u306b|\u305d\u3053\u3067|\u4e00\u65b9\u3067|\u305f\u3060\u3057|\u7d50\u8ad6|\u76ee\u6a19|\u8ab2\u984c|\u4eca\u5f8c|\u5348\u524d\u4e2d|\u5348\u5f8c\u304b\u3089|\u3053\u306e\u65e5\u306f|\u305d\u306e\u5f8c|\u305d\u308c\u304b\u3089)/g,"\n$1").split(/\n+/).map(x=>x.trim()).filter(Boolean).map(x=>/[\u3002\uff01\uff1f]$/.test(x)?x:x+"\u3002")}
+function splitText(t){return normalizeSpeech(t).replace(/([\u3002\uff01\uff1f])/g,"$1\n").replace(/(\u307e\u305a|\u6b21\u306b|\u305d\u3053\u3067|\u4e00\u65b9\u3067|\u305f\u3060\u3057|\u7d50\u8ad6|\u76ee\u6a19|\u8ab2\u984c|\u4eca\u5f8c|\u5348\u524d\u4e2d|\u5348\u5f8c\u304b\u3089|\u3053\u306e\u65e5\u306f|\u305d\u306e\u5f8c|\u305d\u308c\u304b\u3089)/g,"\n$1").split(/\n+/).map(x=>x.trim()).filter(Boolean).map(polishSentence)}
 function pick(lines,words,limit){const r=[];for(const line of lines){if(words.some(w=>line.includes(w))&&!r.includes(line))r.push(line);if(r.length>=limit)break}return r}
 function short(s){return s.length>90?s.slice(0,88)+"\u3002":s}
-function buildDiary(raw,date){const lines=splitText(raw);if(!lines.length)return"";return fmt(date)+"\u306e\u65e5\u8a18\n\n"+lines.join("\n")}
+function normalizeSpeech(text){return text
+  .replace(/\r/g,"")
+  .replace(/[ \t\u3000]+/g," ")
+  .replace(/(えっと|えーと|ええと|あの|そのー|まあ|なんか|ちょっと)(、|。|\s)*/g,"")
+  .replace(/(ですです|ますます)/g,m=>m.slice(0,2))
+  .replace(/([\u3002\uff01\uff1f]){2,}/g,"$1")
+  .replace(/、{2,}/g,"、")
+  .trim()}
+function polishSentence(line){let s=line.trim();
+  s=s.replace(/^昨日朝/,"昨日の朝、")
+    .replace(/^昨日は朝/,"昨日の朝は")
+    .replace(/朝(.{0,8})新聞買って/,"朝$1新聞を買って")
+    .replace(/コンビニでその時/g,"コンビニで、その時")
+    .replace(/一緒に買いました/g,"一緒に買いました")
+    .replace(/行きました/g,"行きました")
+    .replace(/いました/g,"いました")
+    .replace(/でした/g,"でした");
+  s=s.replace(/([^、。！？])\s+(?=[^、。！？])/g,"$1、");
+  if(!/[。！？]$/.test(s))s+="。";
+  return s}
+function groupDiaryLines(lines){const result=[];let current="";for(const line of lines){if((current+line).length<78){current+=(current?"":"")+line}else{if(current)result.push(current);current=line}}if(current)result.push(current);return result}
+function buildDiary(raw,date){const lines=groupDiaryLines(splitText(raw));if(!lines.length)return"";return fmt(date)+"\u306e\u65e5\u8a18\n\n"+lines.join("\n\n")}
 function buildMinutes(raw,date){const lines=splitText(raw);if(!lines.length)return"";const agenda=pick(lines,["\u8b70\u6848","\u76ee\u6a19","\u73fe\u72b6","\u4e2d\u671f","\u8a08\u753b"],4);const points=pick(lines,["\u58f2\u4e0a","\u7d14\u5229\u76ca","\u7dcf\u8cc7\u7523","\u7d14\u8cc7\u7523","\u73fe\u9810\u91d1","\u501f\u5165","\u91d1\u5229","\u5efa\u7bc9\u8cbb","\u6295\u8cc7","\u8ca1\u52d9"],8);const decisions=pick(lines,["\u76ee\u6a19","\u7dad\u6301","\u6e1b\u3089","\u4ee5\u4e0b","\u73fe\u72b6\u7dad\u6301","\u512a\u5148","\u65b9\u91dd"],5);const issues=pick(lines,["\u7121\u7406","\u4e0d\u53ef\u80fd","\u91cd\u3044","\u8ab2\u984c","\u9ad8\u9a30","\u501f\u91d1","\u9577\u671f\u501f\u5165\u91d1","\u53e4\u3044","\u6295\u8cc7"],6);return fmt(date)+" \u8b70\u4e8b\u9332\n\n\u8b70\u984c\n"+(agenda.length?agenda.map(x=>"\u30fb"+short(x)).join("\n"):"\u30fb\u660e\u78ba\u306a\u8b70\u984c\u306f\u62bd\u51fa\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002")+"\n\n\u4e3b\u306a\u8981\u70b9\n"+(points.length?points.map(x=>"\u30fb"+short(x)).join("\n"):"\u30fb\u8981\u70b9\u3092\u62bd\u51fa\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002")+"\n\n\u6c7a\u5b9a\u4e8b\u9805\u30fb\u65b9\u91dd\n"+(decisions.length?decisions.map(x=>"\u30fb"+short(x)).join("\n"):"\u30fb\u660e\u78ba\u306a\u6c7a\u5b9a\u4e8b\u9805\u306f\u8aad\u307f\u53d6\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002")+"\n\n\u8ab2\u984c\n"+(issues.length?issues.map(x=>"\u30fb"+short(x)).join("\n"):"\u30fb\u660e\u78ba\u306a\u8ab2\u984c\u306f\u8aad\u307f\u53d6\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002")}
 function buildSummary(raw,date){const lines=splitText(raw);if(!lines.length)return"";const imp=pick(lines,["\u76ee\u6a19","\u58f2\u4e0a","\u7d14\u5229\u76ca","\u7dcf\u8cc7\u7523","\u7d14\u8cc7\u7523","\u73fe\u9810\u91d1","\u501f\u5165","\u8ca1\u52d9","\u6295\u8cc7","\u4e2d\u671f","\u8a08\u753b","\u8ab2\u984c","\u65b9\u91dd","\u7d50\u8ad6"],10);const use=imp.length?imp:lines.slice(0,8);return fmt(date)+" \u8981\u7d04\n\n"+use.map(x=>"\u30fb"+short(x)).join("\n")}
 function build(raw,date){if(currentMode==="minutes")return buildMinutes(raw,date);if(currentMode==="summary")return buildSummary(raw,date);return buildDiary(raw,date)}
@@ -30,4 +51,4 @@ el.save.onclick=()=>{const output=el.out.value.trim();if(!output){setStatus("\u5
 el.clear.onclick=()=>{const s={date:el.date.value,raw:el.raw.value,output:el.out.value};if(s.raw.trim()||s.output.trim())localStorage.setItem(undoKey,JSON.stringify(s));el.raw.value="";el.out.value="";el.date.value=today();setStatus("\u65b0\u3057\u304f\u66f8\u3051\u307e\u3059\u3002\u76f4\u524d\u306e\u5185\u5bb9\u306f\u5143\u306b\u623b\u305b\u307e\u3059\u3002")};
 el.restore.onclick=()=>{const saved=localStorage.getItem(undoKey);if(!saved){setStatus("\u5fa9\u5143\u3067\u304d\u308b\u5185\u5bb9\u304c\u3042\u308a\u307e\u305b\u3093\u3002");return}const s=JSON.parse(saved);el.date.value=s.date||today();el.raw.value=s.raw||"";el.out.value=s.output||"";setStatus(J.restore)};
 el.copy.onclick=async()=>{const t=getOut();if(!t)return;try{await navigator.clipboard.writeText(t)}catch{el.out.focus();el.out.select();document.execCommand("copy")}el.copy.textContent=J.copied;setTimeout(()=>el.copy.textContent=J.copy,1400)};
-el.image.onclick=exportImage;el.pdf.onclick=exportPdf;el.word.onclick=exportWord;el.install.onclick=()=>el.dialog.showModal();el.closeDialog.onclick=()=>el.dialog.close();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=11").catch(()=>{});el.date.value=today();el.modeHelp.textContent=modeHelp[currentMode];setStatus("\u8a71\u3057\u305f\u5185\u5bb9\u3001\u307e\u305f\u306f\u6587\u5b57\u8d77\u3053\u3057\u3092\u5165\u308c\u3066\u304f\u3060\u3055\u3044\u3002");setupSpeech();renderHistory();
+el.image.onclick=exportImage;el.pdf.onclick=exportPdf;el.word.onclick=exportWord;el.install.onclick=()=>el.dialog.showModal();el.closeDialog.onclick=()=>el.dialog.close();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js?v=12").catch(()=>{});el.date.value=today();el.modeHelp.textContent=modeHelp[currentMode];setStatus("\u8a71\u3057\u305f\u5185\u5bb9\u3001\u307e\u305f\u306f\u6587\u5b57\u8d77\u3053\u3057\u3092\u5165\u308c\u3066\u304f\u3060\u3055\u3044\u3002");setupSpeech();renderHistory();
