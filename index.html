@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="&#12461;&#12461;&#12488;&#12522;">
+<title>&#12461;&#12461;&#12488;&#12522;</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/kikitori-icon-180.png">
+<link rel="icon" href="icons/kikitori-icon.svg">
+<link rel="stylesheet" href="styles.css?v=9">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+  <div class="brand"><img src="icons/kikitori-icon.svg" alt="" class="brand-icon"><div><p class="eyebrow">&#38899;&#22768;&#28165;&#26360;</p><h1>&#12461;&#12461;&#12488;&#12522;</h1></div></div>
+  <button class="icon-button" id="installHelpButton" type="button" aria-label="&#12507;&#12540;&#12512;&#30011;&#38754;&#12395;&#36861;&#21152;">+</button>
+</header>
+<main>
+<section class="today-panel">
+  <div class="date-row"><label for="entryDate">&#26085;&#20184;</label><input id="entryDate" type="date"></div>
+  <div class="mode-tabs" role="group" aria-label="&#28165;&#26360;&#12514;&#12540;&#12489;">
+    <button type="button" class="mode-button is-active" data-mode="diary">&#26085;&#35352;</button>
+    <button type="button" class="mode-button" data-mode="minutes">&#35696;&#20107;&#37682;</button>
+    <button type="button" class="mode-button" data-mode="summary">&#35201;&#32004;</button>
+  </div>
+  <p id="modeHelp" class="status-text"></p>
+  <div class="record-area"><button class="record-button" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordLabel">&#35441;&#12375;&#12390;&#20837;&#21147;</span></button><p id="speechStatus" class="status-text"></p></div>
+  <label class="field-label" for="rawText">&#20803;&#12398;&#20869;&#23481;</label>
+  <textarea id="rawText" rows="9" placeholder="&#12371;&#12371;&#12395;&#38899;&#22768;&#20837;&#21147;&#12414;&#12383;&#12399;&#25991;&#23383;&#36215;&#12371;&#12375;&#12434;&#20837;&#12428;&#12414;&#12377;&#12290;"></textarea>
+  <button class="primary-button" id="polishButton" type="button">&#36984;&#12435;&#12384;&#12514;&#12540;&#12489;&#12391;&#28165;&#26360;</button>
+  <div id="polishLoading" class="polish-loading" hidden><span class="spinner" aria-hidden="true"></span><span>&#28165;&#26360;&#20013;&#12391;&#12377;</span></div>
+</section>
+<section class="draft-panel">
+  <div class="section-heading"><h2>&#28165;&#26360;&#32080;&#26524;</h2><button id="copyButton" class="text-button" type="button">&#12467;&#12500;&#12540;</button></div>
+  <textarea id="diaryText" rows="13" placeholder="&#12371;&#12371;&#12395;&#28165;&#26360;&#32080;&#26524;&#12364;&#20837;&#12426;&#12414;&#12377;&#12290;"></textarea>
+  <div class="action-row"><button id="saveButton" class="secondary-button" type="button">&#20445;&#23384;</button><button id="clearButton" class="ghost-button" type="button">&#26032;&#12375;&#12367;&#26360;&#12367;</button><button id="restoreButton" class="ghost-button" type="button">&#20803;&#12395;&#25147;&#12377;</button></div>
+  <div class="export-grid" aria-label="export"><button id="imageButton" class="export-button" type="button">&#30011;&#20687;</button><button id="pdfButton" class="export-button" type="button">PDF</button><button id="wordButton" class="export-button" type="button">Word</button></div>
+</section>
+<section class="history-panel"><div class="section-heading"><h2>&#20445;&#23384;&#12375;&#12383;&#28165;&#26360;</h2><span id="entryCount" class="count-badge">0&#20214;</span></div><div id="historyList" class="history-list"></div></section>
+</main>
+</div>
+<dialog id="installDialog"><h2>iPhone&#12391;&#20351;&#12358;&#12392;&#12365;</h2><p>Safari&#12391;&#12371;&#12398;&#12506;&#12540;&#12472;&#12434;&#38283;&#12365;&#12289;&#20849;&#26377;&#12508;&#12479;&#12531;&#12363;&#12425;&#12300;&#12507;&#12540;&#12512;&#30011;&#38754;&#12395;&#36861;&#21152;&#12301;&#12434;&#36984;&#12406;&#12392;&#12289;&#12450;&#12503;&#12522;&#12398;&#12424;&#12358;&#12395;&#36215;&#21205;&#12391;&#12365;&#12414;&#12377;&#12290;</p><button id="closeDialogButton" class="primary-button" type="button">&#12431;&#12363;&#12426;&#12414;&#12375;&#12383;</button></dialog>
+<script src="app.js?v=9" defer></script>
+</body>
+</html>
