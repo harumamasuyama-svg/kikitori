@@ -1,36 +1,36 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
 echo ========================================
-echo キキトリ AI連携版を起動します
+echo Kikitori AI local launcher
 echo ========================================
 echo.
-echo OpenAIのAPIキーを貼り付けて Enter を押してください。
-echo 例: sk-から始まる長い文字列です。
-echo この画面で入力したキーはファイルには保存されません。
+echo Paste your OpenAI API key and press Enter.
+echo It starts with sk- .
+echo This key is NOT saved to a file.
 echo.
-set /p OPENAI_API_KEY=APIキー: 
+set /p OPENAI_API_KEY=API key: 
 if "%OPENAI_API_KEY%"=="" (
-  echo.
-  echo APIキーが空です。何もせず終了します。
+  echo API key is empty.
   pause
   exit /b 1
 )
-where node >nul 2>nul
-if errorlevel 1 (
-  echo.
-  echo Node.js が見つかりません。
-  echo 先に Node.js をインストールする必要があります。
+set "NODE_EXE="
+where node >nul 2>nul && set "NODE_EXE=node"
+if not defined NODE_EXE if exist "C:\Users\iwanami5\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" set "NODE_EXE=C:\Users\iwanami5\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+if not defined NODE_EXE (
+  echo Node.js was not found.
+  echo Please install Node.js, or open this project from Codex again.
   pause
   exit /b 1
 )
 set PORT=4173
 set HOST=127.0.0.1
 echo.
-echo ブラウザを開きます...
+echo Opening browser...
 start "" "http://127.0.0.1:4173/index.html?v=13"
 echo.
-echo この黒い画面は閉じないでください。閉じるとAI清書も止まります。
+echo Keep this window open while using AI polish.
+echo Close this window to stop the local AI server.
 echo.
-node server.js
+"%NODE_EXE%" server.js
 pause
