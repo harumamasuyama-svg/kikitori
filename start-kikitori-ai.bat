@@ -4,9 +4,9 @@ echo ========================================
 echo Kikitori AI local launcher
 echo ========================================
 echo.
-echo Paste your OpenAI API key and press Enter.
-echo It starts with sk- .
-echo This key is NOT saved to a file.
+echo 1. Paste your OpenAI API key and press Enter.
+echo 2. Keep this black window open.
+echo 3. The browser opens after the server starts.
 echo.
 set /p OPENAI_API_KEY=API key: 
 if "%OPENAI_API_KEY%"=="" (
@@ -25,12 +25,13 @@ if not defined NODE_EXE (
 )
 set PORT=4173
 set HOST=127.0.0.1
+set AUTO_OPEN=1
 echo.
-echo Opening browser...
-start "" "http://127.0.0.1:4173/index.html?v=13"
-echo.
-echo Keep this window open while using AI polish.
-echo Close this window to stop the local AI server.
+echo Starting Kikitori AI server...
+echo If the browser does not open, use this URL:
+echo http://127.0.0.1:4173/index.html?v=14
 echo.
 "%NODE_EXE%" server.js
+echo.
+echo Server stopped.
 pause

@@ -152,7 +152,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log("キキトリ local AI server: http://" + host + ":" + port + "/");
+  const browserHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+  const url = "http://" + browserHost + ":" + port + "/index.html?v=14";
+  console.log("キキトリ local AI server: " + url);
   console.log("API key: " + (process.env.OPENAI_API_KEY ? "set" : "not set"));
   console.log("Model: " + model);
+  if (process.env.AUTO_OPEN === "1") {
+    require("child_process").exec('start "" "' + url + '"');
+  }
 });
