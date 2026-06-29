@@ -6,6 +6,8 @@ const root = __dirname;
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || "127.0.0.1";
 const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const transcribeModel = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-mini-transcribe";
+const maxAudioBytes = Number(process.env.KIKITORI_MAX_AUDIO_MB || 25) * 1024 * 1024;
 const maxChars = Number(process.env.KIKITORI_MAX_CHARS || 80000);
 
 const mimeTypes = {
@@ -135,6 +137,79 @@ async function polishWithOpenAI(payload) {
   return output;
 }
 
+function readRawBody(req, limitBytes) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > limitBytes) {
+        reject(new Error("音声ファイルが大きすぎます。25MB以内にしてください。"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function parseMultipartAudio(req, body) {
+  const contentType = req.headers["content-type"] || "";
+  const match = contentType.match(/boundary=(?:(?:\")([^\"]+)(?:\")|([^;]+))/i);
+  if (!match) throw new Error("音声ファイルを受け取れませんでした。");
+  const boundary = Buffer.from("--" + (match[1] || match[2]));
+  let start = body.indexOf(boundary);
+  while (start !== -1) {
+    const headerStart = start + boundary.length + 2;
+    const headerEnd = body.indexOf(Buffer.from("\r\n\r\n"), headerStart);
+    if (headerEnd === -1) break;
+    const header = body.slice(headerStart, headerEnd).toString("utf8");
+    const next = body.indexOf(boundary, headerEnd + 4);
+    if (next === -1) break;
+    const content = body.slice(headerEnd + 4, next - 2);
+    if (/name="audio"/i.test(header)) {
+      const filenameMatch = header.match(/filename="([^"]+)"/i);
+      const typeMatch = header.match(/Content-Type:\s*([^\r\n]+)/i);
+      return {
+        filename: filenameMatch ? path.basename(filenameMatch[1]) : "audio.m4a",
+        type: typeMatch ? typeMatch[1].trim() : "application/octet-stream",
+        buffer: content
+      };
+    }
+    start = next;
+  }
+  throw new Error("音声ファイルが見つかりませんでした。");
+}
+
+async function transcribeWithOpenAI(file) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEYが設定されていません。");
+  if (!file || !file.buffer || !file.buffer.length) throw new Error("音声ファイルが空です。");
+  if (file.buffer.length > maxAudioBytes) throw new Error("音声ファイルが大きすぎます。25MB以内にしてください。");
+
+  const form = new FormData();
+  const blob = new Blob([file.buffer], { type: file.type || "application/octet-stream" });
+  form.append("file", blob, file.filename || "audio.m4a");
+  form.append("model", transcribeModel);
+  form.append("language", "ja");
+
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + apiKey },
+    body: form
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data.error && data.error.message ? data.error.message : "OpenAI APIで文字起こしエラーが発生しました。";
+    throw new Error(message);
+  }
+  if (!data.text) throw new Error("文字起こし結果を受け取れませんでした。");
+  return data.text;
+}
+
 function serveStatic(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
@@ -156,6 +231,18 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
+
+  if (req.method === "POST" && req.url === "/api/transcribe") {
+    try {
+      const body = await readRawBody(req, maxAudioBytes + 1024 * 1024);
+      const file = parseMultipartAudio(req, body);
+      const text = await transcribeWithOpenAI(file);
+      sendJson(res, 200, { text });
+    } catch (error) {
+      sendJson(res, 500, { error: error.message || "文字起こしできませんでした。" });
+    }
+    return;
+  }
   if (req.method === "POST" && req.url === "/api/polish") {
     try {
       const body = await readBody(req);
@@ -172,7 +259,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, host, () => {
   const browserHost = host === "0.0.0.0" ? "127.0.0.1" : host;
-  const url = "http://" + browserHost + ":" + port + "/index.html?v=14";
+  const url = "http://" + browserHost + ":" + port + "/index.html?v=16";
   console.log("キキトリ local AI server: " + url);
   console.log("API key: " + (process.env.OPENAI_API_KEY ? "set" : "not set"));
   console.log("Model: " + model);

@@ -29,7 +29,7 @@ set AUTO_OPEN=1
 echo.
 echo Starting Kikitori AI server...
 echo If the browser does not open, use this URL:
-echo http://127.0.0.1:4173/index.html?v=14
+echo http://127.0.0.1:4173/index.html?v=16
 echo.
 "%NODE_EXE%" server.js
 echo.
