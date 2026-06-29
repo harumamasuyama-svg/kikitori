@@ -259,7 +259,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, host, () => {
   const browserHost = host === "0.0.0.0" ? "127.0.0.1" : host;
-  const url = "http://" + browserHost + ":" + port + "/index.html?v=16";
+  const url = "http://" + browserHost + ":" + port + "/index.html?v=17";
   console.log("キキトリ local AI server: " + url);
   console.log("API key: " + (process.env.OPENAI_API_KEY ? "set" : "not set"));
   console.log("Model: " + model);
